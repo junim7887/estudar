@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador Neural | Odonto-Forense</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
+
+        :root {
+            --bg-dark: #0f172a;
+            --glass-bg: rgba(30, 41, 59, 0.85);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --success: #10b981;
+            --danger: #ef4444;
+            --facil: #34d399;
+            --medio: #fbbf24;
+            --dificil: #f87171;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+
+        body {
+            background: linear-gradient(135deg, var(--bg-dark), #1e1b4b);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 15px;
+        }
+
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 25px;
+            width: 100%;
+            max-width: 650px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        h1 { color: var(--primary); font-size: 1.8rem; text-align: center; margin-bottom: 10px; }
+        h2 { font-size: 1.2rem; margin-bottom: 20px; line-height: 1.5; font-weight: 600; }
+        p { color: var(--text-muted); text-align: center; margin-bottom: 20px; font-size: 0.95rem; line-height: 1.6; }
+
+        .badges-container { display: flex; justify-content: space-between; margin-bottom: 15px; align-items: center; }
+        
+        .badge {
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .badge-facil { color: var(--facil); background: rgba(52, 211, 153, 0.15); border: 1px solid var(--facil); }
+        .badge-medio { color: var(--medio); background: rgba(251, 191, 36, 0.15); border: 1px solid var(--medio); }
+        .badge-dificil { color: var(--dificil); background: rgba(248, 113, 113, 0.15); border: 1px solid var(--dificil); }
+        .badge-counter { color: var(--primary); background: rgba(59, 130, 246, 0.15); border: 1px solid var(--primary); }
+
+        .progress-bar-bg { width: 100%; background: rgba(255,255,255,0.05); border-radius: 10px; height: 8px; margin-bottom: 25px; overflow: hidden; }
+        .progress-bar-fill { height: 100%; background: var(--primary); width: 0%; transition: width 0.3s ease; }
+
+        .btn-main {
+            background: var(--primary); color: white; border: none; padding: 16px; width: 100%; border-radius: 12px;
+            font-size: 1.05rem; font-weight: 600; cursor: pointer; transition: 0.2s; margin-top: 10px;
+        }
+        .btn-main:hover { background: var(--primary-hover); transform: translateY(-2px); }
+        .btn-main:active { transform: translateY(0); }
+
+        .option-btn {
+            background: rgba(255,255,255,0.03); color: var(--text-main); border: 1px solid rgba(255,255,255,0.1);
+            padding: 15px; width: 100%; border-radius: 10px; text-align: left; font-size: 0.95rem; line-height: 1.4;
+            margin-bottom: 10px; cursor: pointer; transition: 0.2s;
+        }
+        .option-btn:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.2); }
+        .option-btn.correct { background: var(--success) !important; border-color: var(--success); color: #fff; }
+        .option-btn.wrong { background: var(--danger) !important; border-color: var(--danger); color: #fff; }
+        .option-btn:disabled { cursor: not-allowed; opacity: 0.7; }
+
+        .hidden { display: none !important; }
+
+        .result-box { background: rgba(0,0,0,0.3); border-left: 4px solid var(--primary); padding: 15px; border-radius: 8px; margin-top: 20px; font-size: 0.95rem; line-height: 1.6; text-align: left; }
+        .score-display { text-align: center; font-size: 3rem; font-weight: 700; color: var(--primary); line-height: 1; margin: 10px 0; }
+
+        @media (max-width: 480px) {
+            .glass-panel { padding: 20px 15px; }
+            h2 { font-size: 1.1rem; }
+            .option-btn { padding: 12px; font-size: 0.9rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="start-screen" class="glass-panel">
+        <h1>Simulador Odonto-Forense</h1>
+        <p>Banco de 50 questões avançadas baseadas nas aulas de Odontologia do Trabalho e Forense.</p>
+        <p style="font-size: 0.8rem;">O sistema sorteará <b>15 questões aleatórias</b> para esta sessão, bagunçando as alternativas para evitar vícios de memória. A IA analisará suas fraquezas no final.</p>
+        <button class="btn-main" onclick="initSimulation()">Iniciar Simulação</button>
+    </div>
+
+    <div id="quiz-screen" class="glass-panel hidden">
+        <div class="progress-bar-bg"><div id="progress" class="progress-bar-fill"></div></div>
+        <div class="badges-container">
+            <span id="badge-level" class="badge">NÍVEL</span>
+            <span id="badge-counter" class="badge badge-counter">1/15</span>
+        </div>
+        <h2 id="question-text">Carregando...</h2>
+        <div id="options-box"></div>
+    </div>
+
+    <div id="result-screen" class="glass-panel hidden">
+        <h1>Relatório Cognitivo</h1>
+        <div class="score-display" id="final-score">0%</div>
+        <p>Taxa de Acerto Global</p>
+        <div class="result-box" id="ai-report"></div>
+        <button class="btn-main" onclick="location.reload()">Nova Bateria (Sortear +15)</button>
+    </div>
+
+    <script>
+        // BANCO DE DADOS MACIÇO - 50 Questões retiradas do seu material
+        const masterDB = [
+            // === FÁCEIS ===
+            { t: "Trabalho", l: "facil", q: "Qual o foco da Odontologia do Trabalho segundo a Portaria nº 22/2001?", o: [{t:"Busca da compatibilidade entre a atividade laboral e a saúde do trabalhador.", c:true}, {t:"Atendimento clínico de emergência gratuito nas fábricas.", c:false}, {t:"Prevenção exclusiva de câncer bucal em executivos.", c:false}, {t:"Fiscalizar demissões por justa causa.", c:false}] },
+            { t: "Identidade", l: "facil", q: "A Identidade Objetiva permite afirmar que uma pessoa é ela mesma por meio de elementos que são:", o: [{t:"Positivos e perenes.", c:true}, {t:"Subjetivos e mutáveis.", c:false}, {t:"Psicológicos e estruturais.", c:false}, {t:"Temporários e classificáveis.", c:false}] },
+            { t: "Trabalho", l: "facil", q: "No estudo da infortunística, o que são as 'Tecnopatias'?", o: [{t:"Doenças produzidas pelo trabalho peculiar à atividade (doenças profissionais).", c:true}, {t:"Doenças geradas exclusivamente pelas condições do ambiente (doenças do trabalho).", c:false}, {t:"Acidentes súbitos no trajeto para casa.", c:false}, {t:"Transtornos psiquiátricos não relacionados à profissão.", c:false}] },
+            { t: "Forense", l: "facil", q: "Qual destes princípios da identificação humana refere-se à capacidade dos caracteres resistirem à ação do tempo e da morte?", o: [{t:"Perenidade.", c:true}, {t:"Imutabilidade.", c:false}, {t:"Praticabilidade.", c:false}, {t:"Classificabilidade.", c:false}] },
+            { t: "Forense", l: "facil", q: "A identificação pelos dentes é extremamente eficaz em casos de carbonização e esqueletização porque:", o: [{t:"Os dentes são as estruturas mais resistentes do corpo humano.", c:true}, {t:"O esmalte dentário derrete criando um molde único.", c:false}, {t:"As radiografias perdem a validade após a morte.", c:false}, {t:"A polpa dentária nunca se decompõe.", c:false}] },
+            { t: "Identidade", l: "facil", q: "Como é definido o 'Sexo médico-legal'?", o: [{t:"Constatado através de perícia médica (ex: estudo da bacia pélvica).", c:true}, {t:"Designado no registro civil ao nascer.", c:false}, {t:"A identificação que o indivíduo faz de si próprio (psíquico).", c:false}, {t:"Exclusivamente pela presença dos ductos de Wolff.", c:false}] },
+            { t: "Trabalho", l: "facil", q: "Historicamente (1900, Inglaterra), os primeiros exames periódicos odontológicos em empresas visavam prevenir qual agravo grave?", o: [{t:"Necrose da mandíbula pela manipulação de materiais perigosos.", c:true}, {t:"Cárie rampante pelo consumo de açúcar no refeitório.", c:false}, {t:"Abrasão por poeira de sílica.", c:false}, {t:"Bruxismo causado pelo estresse dos chefes.", c:false}] },
+            { t: "Trabalho", l: "facil", q: "O conceito de Mesopatia refere-se a:", o: [{t:"Doenças adquiridas pelas condições especiais em que o trabalho é realizado.", c:true}, {t:"Lesões diretas causadas por acidentes com maquinário.", c:false}, {t:"Doenças típicas e exclusivas de uma única profissão.", c:false}, {t:"Autolesões provocadas para receber benefício.", c:false}] },
+            { t: "Identidade", l: "facil", q: "A identidade que resulta da consciência que cada pessoa tem de si mesma no tempo e espaço é chamada de:", o: [{t:"Identidade Subjetiva (ou Pessoal).", c:true}, {t:"Identidade Objetiva.", c:false}, {t:"Identidade Médico-Legal.", c:false}, {t:"Identidade Antropométrica.", c:false}] },
+            { t: "Forense", l: "facil", q: "Qual especialidade forense estuda as marcas labiais?", o: [{t:"Queiloscopia.", c:true}, {t:"Rugoscopia palatina.", c:false}, {t:"Dactiloscopia.", c:false}, {t:"Poroscopia.", c:false}] },
+            { t: "Trabalho", l: "facil", q: "Qual era a visão empresarial predominante do séc. XX ao investir na saúde bucal do trabalhador?", o: [{t:"Alcançar melhor produtividade e diminuir o absenteísmo.", c:true}, {t:"Cumprir leis de direitos humanos da ONU.", c:false}, {t:"Evitar o pagamento de horas extras.", c:false}, {t:"Garantir estética perfeita para os trabalhadores operacionais.", c:false}] },
+            { t: "Forense", l: "facil", q: "Os dentes como elementos sinaléticos possuem a característica da 'Unicidade'. Isso significa que:", o: [{t:"A dentição é única para cada pessoa.", c:true}, {t:"O dente não muda ao longo da vida.", c:false}, {t:"É fácil catalogar os arcos dentários.", c:false}, {t:"É um método barato de se realizar.", c:false}] },
+            { t: "Trabalho", l: "facil", q: "Um trabalhador alega sintomas que NÃO possui para obter atestado. Como a Infortunística classifica isso?", o: [{t:"Simulação.", c:true}, {t:"Dissimulação.", c:false}, {t:"Metassimulação.", c:false}, {t:"Parassimulação.", c:false}] },
+            { t: "Forense", l: "facil", q: "A papiloscopia (impressão digital) atende perfeitamente a qual princípio por ser barata e fácil de colher?", o: [{t:"Praticabilidade.", c:true}, {t:"Perenidade.", c:false}, {t:"Classificabilidade.", c:false}, {t:"Imutabilidade.", c:false}] },
+            { t: "Trabalho", l: "facil", q: "Omitir perturbações que realmente tem (ex: durante exame admissional) é conceituado como:", o: [{t:"Dissimulação.", c:true}, {t:"Metassimulação.", c:false}, {t:"Simulação.", c:false}, {t:"Parassimulação.", c:false}] },
+
+            // === MÉDIAS ===
+            { t: "Forense", l: "medio", q: "Na análise de marcas de mordida, qual o formato característico deixado pelos dentes incisivos?", o: [{t:"Largos retângulos com pressões variadas.", c:true}, {t:"Marcas triangulares ou estreladas.", c:false}, {t:"Marcas ovais duplas.", c:false}, {t:"Formatos em 'V' alongados.", c:false}] },
+            { t: "Forense", l: "medio", q: "A evolução da cor de uma equimose (Espectro de Legrand du Saulle) ajuda a datar a lesão. Uma equimose 'Azul-Esverdeada' tem aproximadamente:", o: [{t:"3 a 7 dias.", c:true}, {t:"Recente (Vermelha/Púrpura).", c:false}, {t:"Mais de 15 dias.", c:false}, {t:"6 a 10 dias (Amarelo-esverdeada).", c:false}] },
+            { t: "Trabalho", l: "medio", q: "Garimpeiros expostos cronicamente ao mercúrio (Hidrargirismo) apresentam quais alterações orais e sistêmicas?", o: [{t:"Gengivite, sialorreia, tremores e irritabilidade.", c:true}, {t:"Manchas enegrecidas no esmalte e perda de paladar.", c:false}, {t:"Tórus mandibular e xerostomia grave.", c:false}, {t:"Abrasão severa nas incisais.", c:false}] },
+            { t: "Trabalho", l: "medio", q: "Trabalhadores da indústria do açúcar ou padeiros frequentemente desenvolvem qual alteração dentária devido à poeira do ambiente?", o: [{t:"Cáries cervicais (cáries dos padeiros).", c:true}, {t:"Erosão por ácidos clorídricos.", c:false}, {t:"Pigmentação metálica verde nas gengivas.", c:false}, {t:"Abrasão por silicose.", c:false}] },
+            { t: "Forense", l: "medio", q: "Na determinação do sexo pelo esqueleto, a mandíbula feminina geralmente apresenta-se:", o: [{t:"Ovóide, com regiões de inserção muscular discretas.", c:true}, {t:"Angulosa, com ramo ascendente largo.", c:false}, {t:"Com eminências supra-orbitárias cortantes e proeminentes.", c:false}, {t:"Com caninos significativamente mais largos e robustos.", c:false}] },
+            { t: "Forense", l: "medio", q: "Sobre as marcas de mordida ANIMAL, é correto afirmar que:", o: [{t:"São mais alongadas em forma de 'V' e não têm vestígios de sucção.", c:true}, {t:"Apresentam um padrão de arcos suaves e sucção central.", c:false}, {t:"Causam apenas equimoses superficiais sem laceração.", c:false}, {t:"Ocorrem estritamente com formato retangular (incisivos).", c:false}] },
+            { t: "Identidade", l: "medio", q: "O Corpúsculo de Barr é utilizado para determinar qual tipo de sexo na identificação física?", o: [{t:"Sexo cromatínico (núcleo das células femininas).", c:true}, {t:"Sexo cromossomial (XX e XY).", c:false}, {t:"Sexo gonadal.", c:false}, {t:"Sexo de genitália interna.", c:false}] },
+            { t: "Trabalho", l: "medio", q: "O conceito de 'Metassimulação' no contexto pericial trabalhista significa:", o: [{t:"Exagerar as perturbações que o trabalhador realmente tem.", c:true}, {t:"Criar um sintoma completamente novo e falso.", c:false}, {t:"Esconder uma doença pré-existente.", c:false}, {t:"Misturar sintomas de duas doenças diferentes (Parassimulação).", c:false}] },
+            { t: "Trabalho", l: "medio", q: "Um músico de instrumento de sopro pode desenvolver qual tipo de alteração orofacial ocupacional?", o: [{t:"Modificações na tonicidade labial e migração dentária.", c:true}, {t:"Perda óssea generalizada por vibração sonora.", c:false}, {t:"Erosão ácida severa.", c:false}, {t:"Pigmentação de amálgama (tatuagem).", c:false}] },
+            { t: "Identidade", l: "medio", q: "Qual a diferença técnica entre Identificação e Identidade?", o: [{t:"Identidade é o conjunto de caracteres únicos; Identificação é o processo para determiná-los.", c:true}, {t:"Identificação é o estado psicológico; Identidade é o documento.", c:false}, {t:"São sinônimos exatos na Odontologia Forense.", c:false}, {t:"Identidade refere-se apenas aos mortos; Identificação aos vivos.", c:false}] },
+            { t: "Forense", l: "medio", q: "Para o arquivamento sistemático (Classificabilidade), os métodos de identificação devem preferencialmente seguir o modelo de:", o: [{t:"Fórmulas datiloscópicas ou odontogramas padronizados.", c:true}, {t:"Fotografias coloridas sem padronização de luz.", c:false}, {t:"Moldes de gesso tridimensionais inteiros.", c:false}, {t:"Relatos orais de familiares.", c:false}] },
+            { t: "Trabalho", l: "medio", q: "Trabalhadores expostos ao Chumbo (Saturnismo) podem apresentar na gengiva:", o: [{t:"A Linha de Burton (orla gengival escura).", c:true}, {t:"Hiperplasia gengival generalizada.", c:false}, {t:"Bolsas periodontais sangrantes vermelhas (escorbuto).", c:false}, {t:"Necrose óssea (Phossy jaw).", c:false}] },
+            { t: "Identidade", l: "medio", q: "Ao realizar uma perícia, o sexo de genitália interna definido pela presença dos ductos de Wolff caracteriza o sexo:", o: [{t:"Masculino.", c:true}, {t:"Feminino (ductos de Müller).", c:false}, {t:"Hermafrodita.", c:false}, {t:"Indiferenciado.", c:false}] },
+            { t: "Forense", l: "medio", q: "A rugoscopia palatina é um método de identificação válido porque as rugas palatinas:", o: [{t:"São únicas, imutáveis e protegidas por lábios, dentes e bochechas.", c:true}, {t:"Mudam de forma a cada 5 anos, permitindo datar a idade do cadáver.", c:false}, {t:"São idênticas em gêmeos univitelinos.", c:false}, {t:"Não resistem ao processo de putrefação inicial.", c:false}] },
+            { t: "Forense", l: "medio", q: "Em relação ao grupo racial, o 'xantoderma' na identificação física refere-se aos:", o: [{t:"Índios ou asiáticos (pele amarelada/avermelhada).", c:true}, {t:"Negros (melanodermas).", c:false}, {t:"Brancos (leucodermas).", c:false}, {t:"Pardos (faiodermas).", c:false}] },
+            { t: "Trabalho", l: "medio", q: "Por que a saúde bucal de pacientes psiquiátricos costuma ser inferior?", o: [{t:"Devido à desregulação sistêmica, medicação (boca seca) e menor autocuidado.", c:true}, {t:"Apenas por questões genéticas associadas à doença mental.", c:false}, {t:"Porque a depressão ataca diretamente o esmalte dentário via autoimunidade.", c:false}, {t:"Eles possuem dieta estrita sem carboidratos.", c:false}] },
+            { t: "Forense", l: "medio", q: "Qual a cor de uma equimose que tem 2 semanas de evolução (segundo Legrand du Saulle)?", o: [{t:"Amarelo esbranquiçadas.", c:true}, {t:"Azuis pretas.", c:false}, {t:"Vermelho púrpura.", c:false}, {t:"Marrons.", c:false}] },
+            { t: "Trabalho", l: "medio", q: "A exposição de trabalhadores a névoas de ácidos (ex: indústrias químicas) causa primariamente qual estigma dentário?", o: [{t:"Erosão do esmalte dentário.", c:true}, {t:"Abrasão severa nas oclusais.", c:false}, {t:"Fraturas radiculares.", c:false}, {t:"Cárie de radiação.", c:false}] },
+            { t: "Identidade", l: "medio", q: "Indivíduos gerados a partir da miscigenação de negro e índio são classificados antropologicamente como:", o: [{t:"Cafuso.", c:true}, {t:"Mameluco.", c:false}, {t:"Mulato.", c:false}, {t:"Faioderma.", c:false}] },
+            { t: "Forense", l: "medio", q: "Na avaliação de mordidas humanas, qual das opções abaixo NÃO é um achado comum?", o: [{t:"Lacerações profundas em formato de V com avulsão de tecidos.", c:true}, {t:"Áreas de equimose central por sucção.", c:false}, {t:"Marcas triangulares e retangulares correspondentes a caninos e incisivos.", c:false}, {t:"Padrão em arco ou formato ovalado duplo.", c:false}] },
+
+            // === DIFÍCEIS ===
+            { t: "Forense", l: "dificil", q: "Qual é a fórmula do Índice de Flower (Índice Dentário) para estimativa racial?", o: [{t:"(Comprimento PM e M superiores x 100) / Comprimento basinasal (Ba-Na).", c:true}, {t:"Diâmetro Bizigomático / Distância Triquio-Mento.", c:false}, {t:"Largura do arco maxilar x 10 / Altura do palato.", c:false}, {t:"Soma mesiodistal dos incisivos / Comprimento condilar.", c:false}] },
+            { t: "Forense", l: "dificil", q: "Os 6 parâmetros avaliados pelo Método de Gustafson para estimativa de idade são:", o: [{t:"Abrasão, dentina secundária, periodontose, aposição de cemento, reabsorção radicular e transparência da raiz.", c:true}, {t:"Cárie, erosão, abfração, espessura do esmalte, volume pulpar e rizólise.", c:false}, {t:"Erupção, mineralização coronária, fechamento apical, atrito, perda óssea alveolar e cor do dente.", c:false}, {t:"Índice de placa, profundidade de sondagem, mobilidade, recessão, sangramento e calcificação.", c:false}] },
+            { t: "Trabalho", l: "dificil", q: "Segundo a NR 04, o dimensionamento do SESMT (onde o CD do Trabalho atua) depende fundamentalmente de:", o: [{t:"Grau de Risco da atividade econômica e Número total de empregados.", c:true}, {t:"Faturamento bruto da empresa e localização geográfica.", c:false}, {t:"Carga horária semanal e número de dependentes dos funcionários.", c:false}, {t:"Índice de absenteísmo prévio e tipo de maquinário.", c:false}] },
+            { t: "Forense", l: "dificil", q: "Características craniométricas como: Crânio mesocéfalo, prognatismo maxilar evidente, arcos zigomáticos largos e incisivos em 'pá' sugerem forte ascendência do grupo racial:", o: [{t:"Mongólico.", c:true}, {t:"Caucásico.", c:false}, {t:"Negróide.", c:false}, {t:"Australóide.", c:false}] },
+            { t: "Forense", l: "dificil", q: "No sistema de Nolla para estimativa de idade em crianças, o 'Estágio 6' corresponde a:", o: [{t:"Formação da coroa completa.", c:true}, {t:"Início de calcificação.", c:false}, {t:"Fechamento apical completo.", c:false}, {t:"Formação de 1/3 da raiz.", c:false}] },
+            { t: "Trabalho", l: "dificil", q: "Qual a fisiopatologia da relação entre Depressão (Trabalho) e Doença Periodontal?", o: [{t:"A depressão desregula o eixo HPA, alterando o cortisol e aumentando citocinas pró-inflamatórias, piorando a cicatrização periodontal.", c:true}, {t:"Antidepressivos causam hipertrofia gengival fibrosa irreversível que destrói o osso alveolar.", c:false}, {t:"O estresse causa isquemia local nos capilares do ligamento periodontal, gerando necrose asséptica.", c:false}, {t:"A depressão induz a saliva a ficar com pH hiperalcalino, acelerando o cálculo subgengival.", c:false}] },
+            { t: "Forense", l: "dificil", q: "No método de Lamendin para idade em adultos, quais medidas radiculares são avaliadas?", o: [{t:"Transparência radicular e periodontose (retração gengival).", c:true}, {t:"Abrasão incisal e deposição de cemento apical.", c:false}, {t:"Volume da câmara pulpar e espessura da dentina peritubular.", c:false}, {t:"Reabsorção externa e calcificações pulpares.", c:false}] },
+            { t: "Forense", l: "dificil", q: "Sobre as mordidas do 'Maníaco do Parque' citadas na literatura forense, qual técnica foi utilizada para remover o tecido com a marca para análise?", o: [{t:"Técnica de Luntz e Luntz (1973).", c:true}, {t:"Técnica de Gustafson.", c:false}, {t:"Protocolo de Keiser-Nielsen.", c:false}, {t:"Técnica de secção de blocos de Dechaume.", c:false}] },
+            { t: "Identidade", l: "dificil", q: "A 'Radiografia Carpal' é frequentemente solicitada na forense e na ortodontia. Ela avalia os ossos do carpo para determinar primariamente:", o: [{t:"Idade óssea (estimativa de desenvolvimento e crescimento corporal).", c:true}, {t:"Determinação do sexo pélvico.", c:false}, {t:"Identificação de lesões ocupacionais por LER/DORT exclusivas.", c:false}, {t:"Análise do grupo racial mongólico.", c:false}] },
+            { t: "Trabalho", l: "dificil", q: "O absenteísmo na visão gerencial deve ser controlado. O papel da Odonto do Trabalho na redução do absenteísmo baseia-se em evitar ausências que ocorrem:", o: [{t:"Pelos reflexos de patologias odontológicas sistêmicas e exames preventivos no próprio local de trabalho.", c:true}, {t:"Apenas por traumas maxilofaciais operacionais.", c:false}, {t:"Pela dispensa médica decorrente de bruxismo.", c:false}, {t:"Forçando o funcionário a trabalhar mesmo com dor aguda sob analgesia forte.", c:false}] },
+            { t: "Forense", l: "dificil", q: "Crânio dolicocefálico, ortognato, com tubérculo de Carabelli comum e contorno palatino parabólico aponta para o grupo racial:", o: [{t:"Caucásico (Caucasóide).", c:true}, {t:"Mongólico.", c:false}, {t:"Negróide.", c:false}, {t:"Australóide.", c:false}] },
+            { t: "Forense", l: "dificil", q: "Qual a base da técnica de estimativa de idade pela Racemização do Ácido Aspártico?", o: [{t:"Conversão progressiva pós-natal do L-ácido aspártico (dentina) para a forma D-ácido aspártico, relacionada ao tempo e temperatura.", c:true}, {t:"Análise quantitativa de carbono-14 na matriz de esmalte.", c:false}, {t:"Contagem dos prismas de esmalte e linhas de Retzius cruzadas.", c:false}, {t:"Descalcificação ácida e medição do colágeno tipo I apical.", c:false}] },
+            { t: "Trabalho", l: "dificil", q: "Por que a 'Dissimulação' é tão grave quanto a 'Simulação' nos exames admissionais?", o: [{t:"Porque o empregador atual pode acabar arcando legalmente com uma patologia ou sequela pré-existente do trabalhador.", c:true}, {t:"Porque aumenta os impostos federais pagos pela clínica odontológica.", c:false}, {t:"Porque o SESMT é obrigado a internar o funcionário imediatamente.", c:false}, {t:"Porque invalida automaticamente a NR 04 da empresa.", c:false}] },
+            { t: "Forense", l: "dificil", q: "Na avaliação microscópica de Gustafson, como é quantificada cada uma das 6 alterações?", o: [{t:"Em pontuações de 0 a 3 (0=ausente, 1=início, 2=moderado, 3=avançado), usando uma fórmula de regressão linear.", c:true}, {t:"São medidas em milímetros precisos com paquímetro digital e divididas por 4.", c:false}, {t:"São analisadas apenas de forma qualitativa qualitativa (Presença/Ausência).", c:false}, {t:"Usa-se a porcentagem de área comprometida dividida pela idade presumida.", c:false}] },
+            { t: "Identidade", l: "dificil", q: "Para o sexo feminino, o índice isquiopúbico (bacia pélvica) apresenta-se geralmente:", o: [{t:"Maior que 100, indicando um ramo púbico relativamente mais longo que o isquiático.", c:true}, {t:"Menor que 90, indicando estreitamento para o parto.", c:false}, {t:"Com ângulo subpúbico estreito em forma de 'V' fechado.", c:false}, {t:"Idêntico ao masculino, não servindo como parâmetro isolado.", c:false}] }
+        ];
+
+        // Variáveis globais do fluxo
+        const MAX_QUESTIONS_PER_ROUND = 15;
+        let sessionQuestions = [];
+        let currentIndex = 0;
+        let stats = { correct: 0, total: 0, facil: {c:0,t:0}, medio: {c:0,t:0}, dificil: {c:0,t:0}, Forense: {c:0,t:0}, Trabalho: {c:0,t:0}, Identidade: {c:0,t:0} };
+
+        // Embaralhador universal (Fisher-Yates)
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        // Inicia simulado
+        function initSimulation() {
+            // Sorteia 15 questões aleatórias do masterDB de 50
+            shuffle(masterDB);
+            sessionQuestions = masterDB.slice(0, MAX_QUESTIONS_PER_ROUND);
+            
+            // Bagunça as alternativas dentro das selecionadas
+            sessionQuestions.forEach(q => shuffle(q.o));
+
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('quiz-screen').classList.remove('hidden');
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            if (currentIndex >= sessionQuestions.length) {
+                showResults();
+                return;
+            }
+
+            const q = sessionQuestions[currentIndex];
+            
+            // UI Updates
+            document.getElementById('badge-counter').innerText = `${currentIndex + 1} / ${sessionQuestions.length}`;
+            document.getElementById('progress').style.width = `${(currentIndex / sessionQuestions.length) * 100}%`;
+
+            const lblBadge = document.getElementById('badge-level');
+            lblBadge.innerText = q.l.toUpperCase();
+            lblBadge.className = `badge badge-${q.l}`;
+
+            document.getElementById('question-text').innerText = q.q;
+
+            const box = document.getElementById('options-box');
+            box.innerHTML = ''; 
+
+            q.o.forEach((opt) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.innerText = opt.t;
+                btn.onclick = () => checkAnswer(opt.c, btn, q);
+                box.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(isCorrect, btnSelected, qData) {
+            const allBtns = document.querySelectorAll('.option-btn');
+            
+            // Trava opções e colore
+            allBtns.forEach(btn => {
+                btn.disabled = true;
+                const optMatch = qData.o.find(o => o.t === btn.innerText);
+                if (optMatch.c) btn.classList.add('correct');
+            });
+
+            if (!isCorrect) btnSelected.classList.add('wrong');
+
+            // Atualiza status
+            stats.total++;
+            stats[qData.l].t++;
+            stats[qData.t].t++;
+            
+            if (isCorrect) {
+                stats.correct++;
+                stats[qData.l].c++;
+                stats[qData.t].c++;
+            }
+
+            setTimeout(() => {
+                currentIndex++;
+                loadQuestion();
+            }, 1200);
+        }
+
+        function showResults() {
+            document.getElementById('quiz-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.remove('hidden');
+
+            const scorePercent = Math.round((stats.correct / stats.total) * 100);
+            document.getElementById('final-score').innerText = `${scorePercent}%`;
+            document.getElementById('progress').style.width = `100%`;
+
+            // IA Neural Fake - Relatório Personalizado
+            let txt = `<b>🧠 Análise de Desempenho:</b><br><br>`;
+            
+            if(scorePercent >= 85) txt += "🎯 <b>Excelente:</b> Sua memória RAM cognitiva tá voando. O domínio teórico das NRs e Antropometria está sólido.";
+            else if(scorePercent >= 60) txt += "⚖️ <b>Moderado:</b> Boa base, mas o algoritmo aponta que há confusões sutis entre definições jurídicas e forenses.";
+            else txt += "⚠️ <b>Alerta:</b> A rede neural detectou falhas estruturais de aprendizado. Recomendamos revisar os slides de Forense e Estigmas ocupacionais.";
+
+            // Extrair fraquezas / Forças
+            txt += `<br><br><b>📊 Diagnóstico por Área:</b><ul>`;
+            ['Trabalho', 'Forense', 'Identidade'].forEach(area => {
+                if(stats[area].t > 0) {
+                    const acc = Math.round((stats[area].c / stats[area].t) * 100);
+                    txt += `<li><b>${area}:</b> ${acc}% de acerto (${stats[area].c}/${stats[area].t})</li>`;
+                }
+            });
+            txt += `</ul><br><b>Dica do Sistema:</b> Continue rodando o simulador. As ${masterDB.length} questões totais sempre trarão baterias novas de desafios.`;
+
+            document.getElementById('ai-report').innerHTML = txt;
+        }
+    </script>
+</body>
+</html>
